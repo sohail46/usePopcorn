@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import StarRating from "./StarRating";
 
 const average = (arr) =>
@@ -141,6 +141,16 @@ export default function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [userRating, setUserRating] = useState("");
 
+    const countRef = useRef(0); // persisted and does'nt rerender
+    // let count = 0; will reset on every function call
+
+    useEffect(
+      function () {
+        if (userRating) countRef.current += 1;
+      },
+      [userRating]
+    );
+
     const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
     const watchedUserRating = watched.find(
       (movie) => movie.imdbID === selectedId
@@ -168,6 +178,7 @@ export default function App() {
         imdbRating: Number(imdbRating),
         runtime: Number(runtime.split(" ").at(0)),
         userRating,
+        countRatingDecisions: countRef.current,
       };
 
       onAddWatched(newWatchedMovie);
@@ -370,6 +381,32 @@ export default function App() {
   }
 
   function Search({ query, setQuery }) {
+    const inputEl = useRef(null);
+
+    useEffect(
+      function () {
+        function callback(e) {
+          if (!inputEl) return;
+          if (document.activeElement === inputEl.current) return;
+
+          if (e.code === "Enter") {
+            inputEl.current.focus();
+            setQuery("");
+          }
+        }
+
+        document.addEventListener("keydown", callback);
+        // inputEl.current.focus();
+        return () => document.addEventListener("keydown", callback);
+      },
+      [setQuery]
+    );
+
+    // useEffect(function () {
+    //   const el = document.querySelector(".search");
+    //   el.focus();
+    // }, []);
+
     return (
       <input
         className="search"
@@ -377,6 +414,7 @@ export default function App() {
         placeholder="Search movies..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        ref={inputEl}
       />
     );
   }
